@@ -68,6 +68,15 @@ export function useCreateQuestion(quizId: string) {
   });
 }
 
+export function useUpdateQuestion(quizId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, text }: { id: string; text: string }) =>
+      api<Question>(`/questions/${id}`, { method: 'PATCH', body: JSON.stringify({ text }) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: questionsKey(quizId) }),
+  });
+}
+
 export function useDeleteQuestion(quizId: string) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -90,6 +99,18 @@ export function useCreateChoice(quizId: string) {
     }) =>
       api<Choice>(`/questions/${questionId}/choices`, {
         method: 'POST',
+        body: JSON.stringify({ text, isCorrect }),
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: questionsKey(quizId) }),
+  });
+}
+
+export function useUpdateChoice(quizId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, text, isCorrect }: { id: string; text?: string; isCorrect?: boolean }) =>
+      api<Choice>(`/choices/${id}`, {
+        method: 'PATCH',
         body: JSON.stringify({ text, isCorrect }),
       }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: questionsKey(quizId) }),

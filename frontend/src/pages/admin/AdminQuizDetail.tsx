@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import {
   useCreateChoice,
   useCreateQuestion,
@@ -8,10 +9,13 @@ import {
   useDeleteQuestion,
   useQuestions,
   useQuiz,
+  useUpdateChoice,
+  useUpdateQuestion,
   useUpdateQuiz,
 } from '@/hooks/use-admin-quizzes';
 import type { Question, Quiz } from '@/lib/types';
 import { ConfirmDeleteButton } from '@/components/confirm-delete-button';
+import { InlineEditText } from '@/components/inline-edit-text';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -96,13 +100,22 @@ function AddChoiceForm({ quizId, questionId }: { quizId: string; questionId: str
 }
 
 function QuestionCard({ quizId, question }: { quizId: string; question: Question }) {
+  const updateQuestion = useUpdateQuestion(quizId);
   const deleteQuestion = useDeleteQuestion(quizId);
+  const updateChoice = useUpdateChoice(quizId);
   const deleteChoice = useDeleteChoice(quizId);
+  const hasCorrectChoice = question.choices.some((choice) => choice.isCorrect);
 
   return (
     <Card>
       <CardHeader className="flex-row items-start justify-between">
-        <CardTitle className="text-base font-medium">{question.text}</CardTitle>
+        <CardTitle className="text-base font-medium">
+          <InlineEditText
+            value={question.text}
+            onSave={(text) => updateQuestion.mutate({ id: question.id, text })}
+            isSaving={updateQuestion.isPending}
+          />
+        </CardTitle>
         <ConfirmDeleteButton
           description="This permanently deletes the question and all of its choices."
           onConfirm={() => deleteQuestion.mutate(question.id)}
@@ -112,12 +125,24 @@ function QuestionCard({ quizId, question }: { quizId: string; question: Question
         </ConfirmDeleteButton>
       </CardHeader>
       <CardContent className="flex flex-col gap-2">
+        {question.choices.length > 0 && !hasCorrectChoice && (
+          <p className="text-sm text-amber-600">No choice is marked correct yet.</p>
+        )}
         {question.choices.map((choice) => (
           <div key={choice.id} className="flex items-center justify-between gap-2 text-sm">
-            <span className={choice.isCorrect ? 'font-medium text-green-600' : undefined}>
-              {choice.text}
-              {choice.isCorrect && ' ✓'}
-            </span>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                checked={choice.isCorrect}
+                onCheckedChange={(v) =>
+                  updateChoice.mutate({ id: choice.id, isCorrect: v === true })
+                }
+              />
+              <InlineEditText
+                value={choice.text}
+                onSave={(text) => updateChoice.mutate({ id: choice.id, text })}
+                isSaving={updateChoice.isPending}
+              />
+            </div>
             <Button
               variant="ghost"
               size="sm"
@@ -166,6 +191,14 @@ export function AdminQuizDetail() {
 
   return (
     <div className="flex flex-col gap-6">
+      <Link
+        to="/admin/quizzes"
+        className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-sm"
+      >
+        <ArrowLeft className="size-4" />
+        Back to quizzes
+      </Link>
+
       {quiz && <QuizDetailsForm quizId={quizId} quiz={quiz} />}
 
       <div>

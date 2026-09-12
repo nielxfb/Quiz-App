@@ -1,9 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
+import { Navigate } from 'react-router-dom';
 import { api } from '@/lib/api';
+import { useCurrentUser } from '@/hooks/use-auth';
 import type { Quiz } from '@/lib/types';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export function QuizList() {
+  const { data: currentUser } = useCurrentUser();
   const {
     data: quizzes,
     isLoading,
@@ -12,6 +15,10 @@ export function QuizList() {
     queryKey: ['quizzes'],
     queryFn: () => api<Quiz[]>('/quizzes'),
   });
+
+  if (currentUser?.role === 'admin') {
+    return <Navigate to="/admin/quizzes" replace />;
+  }
 
   if (isLoading) {
     return <p className="text-muted-foreground text-sm">Loading quizzes...</p>;
