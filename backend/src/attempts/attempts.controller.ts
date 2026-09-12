@@ -1,8 +1,10 @@
 import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { AttemptsService } from './attempts.service.js';
 import { StartAttemptDto } from './dto/start-attempt.dto.js';
 import { SubmitAnswerDto } from './dto/submit-answer.dto.js';
 
+@ApiTags('attempts')
 @Controller()
 export class AttemptsController {
   constructor(private readonly attemptsService: AttemptsService) {}

@@ -1,8 +1,10 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { ChoicesService } from './choices.service.js';
 import { CreateChoiceDto } from './dto/create-choice.dto.js';
 import { UpdateChoiceDto } from './dto/update-choice.dto.js';
 
+@ApiTags('choices')
 @Controller()
 export class ChoicesController {
   constructor(private readonly choicesService: ChoicesService) {}
