@@ -1,29 +1,40 @@
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../lib/api';
-
-interface Quiz {
-  id: string;
-  title: string;
-  description?: string;
-}
+import { api } from '@/lib/api';
+import type { Quiz } from '@/lib/types';
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export function QuizList() {
-  const { data: quizzes, isLoading, error } = useQuery({
+  const {
+    data: quizzes,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ['quizzes'],
     queryFn: () => api<Quiz[]>('/quizzes'),
   });
 
-  if (isLoading) return <p>Loading quizzes...</p>;
-  if (error) return <p>Failed to load quizzes: {error.message}</p>;
+  if (isLoading) {
+    return <p className="text-muted-foreground text-sm">Loading quizzes...</p>;
+  }
+
+  if (error) {
+    return <p className="text-destructive text-sm">Failed to load quizzes: {error.message}</p>;
+  }
+
+  if (!quizzes?.length) {
+    return <p className="text-muted-foreground text-sm">No quizzes yet.</p>;
+  }
 
   return (
-    <ul>
-      {quizzes?.map((quiz) => (
-        <li key={quiz.id}>
-          <strong>{quiz.title}</strong>
-          {quiz.description && <p>{quiz.description}</p>}
-        </li>
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {quizzes.map((quiz) => (
+        <Card key={quiz.id}>
+          <CardHeader>
+            <CardTitle>{quiz.title}</CardTitle>
+            {quiz.description && <CardDescription>{quiz.description}</CardDescription>}
+          </CardHeader>
+        </Card>
       ))}
-    </ul>
+    </div>
   );
 }
