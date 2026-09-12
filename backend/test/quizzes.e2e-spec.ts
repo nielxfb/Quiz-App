@@ -4,7 +4,7 @@ import { Reflector } from '@nestjs/core';
 import cookieParser from 'cookie-parser';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module.js';
-import { registerAndLogin } from './setup/auth-helper.js';
+import { registerAdminAndLogin, registerAndLogin } from './setup/auth-helper.js';
 
 describe('Quizzes (e2e)', () => {
   let app: INestApplication<App>;
@@ -21,7 +21,7 @@ describe('Quizzes (e2e)', () => {
     app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
     await app.init();
 
-    ({ agent } = await registerAndLogin(app));
+    ({ agent } = await registerAdminAndLogin(app));
   });
 
   afterAll(async () => {
@@ -40,6 +40,11 @@ describe('Quizzes (e2e)', () => {
 
   it('/quizzes (POST) rejects a missing title', () => {
     return agent.post('/quizzes').send({}).expect(400);
+  });
+
+  it('/quizzes (POST) is forbidden for a non-admin user', async () => {
+    const { agent: userAgent } = await registerAndLogin(app);
+    return userAgent.post('/quizzes').send({ title: 'Should not work' }).expect(403);
   });
 
   it('/quizzes (GET) lists quizzes', async () => {

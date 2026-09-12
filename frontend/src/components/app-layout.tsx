@@ -1,4 +1,4 @@
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { useCurrentUser, useLogout } from '@/hooks/use-auth';
 import { useServerTime } from '@/hooks/use-server-time';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -17,7 +17,16 @@ export function AppLayout() {
   return (
     <div className="min-h-svh">
       <header className="flex items-center justify-between border-b px-6 py-4">
-        <span className="font-semibold">Quiz App</span>
+        <nav className="flex items-center gap-6">
+          <Link to="/" className="font-semibold">
+            Quiz App
+          </Link>
+          {user?.role === 'admin' && (
+            <Link to="/admin" className="text-muted-foreground hover:text-foreground text-sm">
+              Admin
+            </Link>
+          )}
+        </nav>
         <div className="flex items-center gap-4">
           {serverTime && (
             <span className="text-muted-foreground text-sm tabular-nums">

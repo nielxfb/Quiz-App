@@ -36,6 +36,16 @@ POST /auth/logout                                     -> clears the session
 
 A browser-based client must send `credentials: 'include'` on every request for the cookie to be sent/accepted cross-origin (see `CORS_ORIGIN` in `.env.example`).
 
+## Authorization (admin)
+
+Users have a `role`: `user` (default) or `admin`. Managing quizzes/questions/choices (create/update/delete) and managing user accounts (list, view, update, delete, change role) requires admin — everyone else can only browse and take quizzes.
+
+There's no signup flow for admins; promote an existing account directly:
+
+```bash
+npm run promote-admin -- someone@example.com
+```
+
 ## Testing
 
 ```bash

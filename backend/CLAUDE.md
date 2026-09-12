@@ -59,6 +59,12 @@ Because the frontend and backend are different origins in dev (`:5173` vs `:3000
 
 `User.password` has `@Column({ select: false })` (excluded from query results) **and** `@Exclude()` from `class-transformer` (excluded from serialized responses via the global `ClassSerializerInterceptor` in `main.ts`) — `select: false` alone does not stop a freshly-`save()`d entity from having the plaintext/hashed password in the object returned to the controller, so both are needed. Passwords are hashed with `bcrypt` in `UsersService`, never in the controller or repository.
 
+### Authorization (roles)
+
+`User.role` is `UserRole.USER` (default) or `UserRole.ADMIN` (`users/entities/user-role.enum.ts`). Quiz/question/choice **writes** (create/update/delete) and all of `UsersController` except `POST /users` require admin — decorate the route with `@AdminOnly()` (`auth/decorators/admin-only.decorator.ts`, composes `@UseGuards(RolesGuard)` + `@Roles(UserRole.ADMIN)`). Reads (`GET`) and the attempt-taking flow (`POST .../attempts`, `.../answers`, `.../submit`) stay open to any authenticated user — only content/account *management* is admin-gated.
+
+`RolesGuard` is applied per-route via `@UseGuards`, not globally — it relies on `request.user` already being populated by the global `JwtAuthGuard`, so a logged-out request gets `401` before `RolesGuard` ever runs (rather than a confusing `403`). There's no self-serve way to become the first admin (by design, to keep `POST /users` safe to leave public) — `scripts/promote-admin.mjs` (`npm run promote-admin -- <email>`) promotes a user directly via a raw DB update. e2e tests mirror this: `test/setup/auth-helper.ts`'s `registerAdminAndLogin` registers a normal user then promotes them the same way, directly against the test DB.
+
 ### Swagger
 
 `nest-cli.json` enables the `@nestjs/swagger` CLI plugin, which auto-generates `@ApiProperty` schemas from DTO/entity TypeScript types at build time (via `nest build`, not via raw `tsc` or vitest) — no need to hand-annotate DTO fields. UI is served at `/docs`, spec at `/docs-json`, set up in `main.ts`.

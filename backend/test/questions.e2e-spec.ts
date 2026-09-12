@@ -4,7 +4,7 @@ import { Reflector } from '@nestjs/core';
 import cookieParser from 'cookie-parser';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module.js';
-import { registerAndLogin } from './setup/auth-helper.js';
+import { registerAdminAndLogin, registerAndLogin } from './setup/auth-helper.js';
 
 describe('Questions (e2e)', () => {
   let app: INestApplication<App>;
@@ -22,7 +22,7 @@ describe('Questions (e2e)', () => {
     app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
     await app.init();
 
-    ({ agent } = await registerAndLogin(app));
+    ({ agent } = await registerAdminAndLogin(app));
 
     const quiz = await agent.post('/quizzes').send({ title: 'Questions Test Quiz' });
     quizId = quiz.body.id;

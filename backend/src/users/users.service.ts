@@ -3,6 +3,7 @@ import * as bcrypt from 'bcrypt';
 import { UsersRepository } from './users.repository.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
+import { UpdateRoleDto } from './dto/update-role.dto.js';
 import { User } from './entities/user.entity.js';
 
 const SALT_ROUNDS = 10;
@@ -47,6 +48,11 @@ export class UsersService {
       data.password = await bcrypt.hash(updateUserDto.password, SALT_ROUNDS);
     }
     return (await this.usersRepository.update(id, data))!;
+  }
+
+  async updateRole(id: string, updateRoleDto: UpdateRoleDto): Promise<User> {
+    await this.findOne(id);
+    return (await this.usersRepository.update(id, { role: updateRoleDto.role }))!;
   }
 
   async remove(id: string): Promise<void> {

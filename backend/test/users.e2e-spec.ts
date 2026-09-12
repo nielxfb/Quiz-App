@@ -5,7 +5,7 @@ import cookieParser from 'cookie-parser';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module.js';
-import { registerAndLogin } from './setup/auth-helper.js';
+import { registerAdminAndLogin, registerAndLogin } from './setup/auth-helper.js';
 
 describe('Users (e2e)', () => {
   let app: INestApplication<App>;
@@ -26,7 +26,7 @@ describe('Users (e2e)', () => {
     app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
     await app.init();
 
-    ({ agent } = await registerAndLogin(app));
+    ({ agent } = await registerAdminAndLogin(app));
   });
 
   afterAll(async () => {
@@ -43,7 +43,7 @@ describe('Users (e2e)', () => {
       .send({ username, email, password: 'supersecret123' })
       .expect(201);
 
-    expect(response.body).toMatchObject({ username, email });
+    expect(response.body).toMatchObject({ username, email, role: 'user' });
     expect(response.body.password).toBeUndefined();
     createdUserId = response.body.id;
   });
@@ -62,12 +62,17 @@ describe('Users (e2e)', () => {
       .expect(400);
   });
 
-  it('/users (GET) lists users', async () => {
+  it('/users (GET) lists users for an admin', async () => {
     const response = await agent.get('/users').expect(200);
     expect(Array.isArray(response.body)).toBe(true);
   });
 
-  it('/users/:id (GET/PATCH/DELETE) full lifecycle', async () => {
+  it('/users (GET) is forbidden for a non-admin user', async () => {
+    const { agent: userAgent } = await registerAndLogin(app);
+    return userAgent.get('/users').expect(403);
+  });
+
+  it('/users/:id (GET/PATCH/DELETE) full lifecycle as admin', async () => {
     const created = await request(app.getHttpServer())
       .post('/users')
       .send({
@@ -90,6 +95,40 @@ describe('Users (e2e)', () => {
 
     await agent.delete(`/users/${id}`).expect(200);
     await agent.get(`/users/${id}`).expect(404);
+  });
+
+  it('/users/:id/role (PATCH) promotes and demotes a user', async () => {
+    const created = await request(app.getHttpServer())
+      .post('/users')
+      .send({
+        username: `promote-${runId}`,
+        email: `promote-${runId}@example.com`,
+        password: 'password123',
+      })
+      .expect(201);
+    const id = created.body.id;
+
+    await agent
+      .patch(`/users/${id}/role`)
+      .send({ role: 'admin' })
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.role).toBe('admin');
+      });
+
+    await agent
+      .patch(`/users/${id}/role`)
+      .send({ role: 'user' })
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.role).toBe('user');
+      });
+
+    await agent.delete(`/users/${id}`).expect(200);
+  });
+
+  it('/users/:id/role (PATCH) rejects an invalid role', async () => {
+    return agent.patch(`/users/${createdUserId}/role`).send({ role: 'superadmin' }).expect(400);
   });
 
   it.todo('/users/:id/attempts (GET) lists a user’s attempt history');

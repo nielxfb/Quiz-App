@@ -5,7 +5,7 @@ import cookieParser from 'cookie-parser';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module.js';
-import { registerAndLogin } from './setup/auth-helper.js';
+import { registerAdminAndLogin, registerAndLogin } from './setup/auth-helper.js';
 
 describe('Attempts (e2e)', () => {
   let app: INestApplication<App>;
@@ -27,7 +27,7 @@ describe('Attempts (e2e)', () => {
     app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
     await app.init();
 
-    ({ agent, userId } = await registerAndLogin(app));
+    ({ agent, userId } = await registerAdminAndLogin(app));
 
     const quiz = await agent.post('/quizzes').send({ title: 'Attempts Test Quiz' });
     quizId = quiz.body.id;
