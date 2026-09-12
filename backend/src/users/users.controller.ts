@@ -4,6 +4,7 @@ import { UsersService } from './users.service.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
 import { AttemptsService } from '../attempts/attempts.service.js';
+import { Public } from '../auth/decorators/public.decorator.js';
 
 @ApiTags('users')
 @Controller('users')
@@ -13,6 +14,7 @@ export class UsersController {
     private readonly attemptsService: AttemptsService,
   ) {}
 
+  @Public()
   @Post()
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);

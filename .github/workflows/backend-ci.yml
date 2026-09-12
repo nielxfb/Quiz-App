@@ -58,3 +58,5 @@ jobs:
           DB_USERNAME: postgres
           DB_PASSWORD: postgres
           DB_NAME: quiz_app_test
+          JWT_SECRET: ci-test-secret
+          JWT_EXPIRES_IN: 1d

@@ -24,6 +24,14 @@ export class UsersService {
     return this.usersRepository.findAll();
   }
 
+  findByEmailWithPassword(email: string): Promise<User | null> {
+    return this.usersRepository.findByEmail(email);
+  }
+
+  findOneOrNull(id: string): Promise<User | null> {
+    return this.usersRepository.findById(id);
+  }
+
   async findOne(id: string): Promise<User> {
     const user = await this.usersRepository.findById(id);
     if (!user) {

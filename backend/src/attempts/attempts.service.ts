@@ -1,13 +1,11 @@
-import { BadRequestException, forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { AttemptsRepository } from './attempts.repository.js';
-import { StartAttemptDto } from './dto/start-attempt.dto.js';
 import { SubmitAnswerDto } from './dto/submit-answer.dto.js';
 import { Attempt } from './entities/attempt.entity.js';
 import { AttemptAnswer } from './entities/attempt-answer.entity.js';
 import { Quiz } from '../quizzes/entities/quiz.entity.js';
 import { QuizzesService } from '../quizzes/quizzes.service.js';
 import { ChoicesService } from '../choices/choices.service.js';
-import { UsersService } from '../users/users.service.js';
 
 @Injectable()
 export class AttemptsService {
@@ -15,18 +13,13 @@ export class AttemptsService {
     private readonly attemptsRepository: AttemptsRepository,
     private readonly quizzesService: QuizzesService,
     private readonly choicesService: ChoicesService,
-    @Inject(forwardRef(() => UsersService))
-    private readonly usersService: UsersService,
   ) {}
 
-  async start(quizId: string, startAttemptDto: StartAttemptDto): Promise<Attempt> {
+  async start(quizId: string, userId: string): Promise<Attempt> {
     await this.quizzesService.findOne(quizId);
-    if (startAttemptDto.userId) {
-      await this.usersService.findOne(startAttemptDto.userId);
-    }
     return this.attemptsRepository.create({
       quiz: { id: quizId },
-      ...(startAttemptDto.userId && { user: { id: startAttemptDto.userId } }),
+      user: { id: userId },
     });
   }
 

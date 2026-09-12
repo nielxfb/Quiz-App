@@ -1,8 +1,9 @@
 import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { AttemptsService } from './attempts.service.js';
-import { StartAttemptDto } from './dto/start-attempt.dto.js';
 import { SubmitAnswerDto } from './dto/submit-answer.dto.js';
+import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
+import { User } from '../users/entities/user.entity.js';
 
 @ApiTags('attempts')
 @Controller()
@@ -10,8 +11,8 @@ export class AttemptsController {
   constructor(private readonly attemptsService: AttemptsService) {}
 
   @Post('quizzes/:quizId/attempts')
-  start(@Param('quizId') quizId: string, @Body() startAttemptDto: StartAttemptDto) {
-    return this.attemptsService.start(quizId, startAttemptDto);
+  start(@Param('quizId') quizId: string, @CurrentUser() user: User) {
+    return this.attemptsService.start(quizId, user.id);
   }
 
   @Get('quizzes/:quizId/attempts')

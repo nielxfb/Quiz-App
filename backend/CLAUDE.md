@@ -41,17 +41,23 @@ Every domain feature (`quizzes`, `questions`, `choices`, `users`, `attempts`) un
 
 Relations form a chain: `Quiz → Question → Choice`, and `User`/`Quiz → Attempt → AttemptAnswer` (which references both a `Question` and the `Choice` picked). This drives two things:
 
-1. **Nested-resource controllers.** `QuestionsController`, `ChoicesController`, and `AttemptsController` each expose both a nested-create/list route and a flat by-id route (e.g. `POST /quizzes/:quizId/questions` and `GET /questions/:id` live in the same `QuestionsController`). They use `@Controller()` with the full path spelled out per-route rather than a fixed prefix, precisely because they need two different route roots.
-2. **A genuine circular module dependency**: `UsersModule` needs `AttemptsService` (for `GET /users/:id/attempts` and `GET /users/:id/quizzes`), and `AttemptsService` needs `UsersService` (to validate `userId` when starting an attempt). Both sides use `forwardRef()` — if you add a new cross-feature call in either direction, check whether it reintroduces this cycle.
+**Nested-resource controllers.** `QuestionsController`, `ChoicesController`, and `AttemptsController` each expose both a nested-create/list route and a flat by-id route (e.g. `POST /quizzes/:quizId/questions` and `GET /questions/:id` live in the same `QuestionsController`). They use `@Controller()` with the full path spelled out per-route rather than a fixed prefix, precisely because they need two different route roots.
+
+`UsersModule` imports `AttemptsModule` (for `GET /users/:id/attempts` and `GET /users/:id/quizzes`) — a one-directional dependency, no `forwardRef()` needed. `AttemptsService` used to need `UsersService` too (to validate a client-supplied `userId`), which made this circular; that need went away once attempts started deriving the user from the authenticated request instead (see Authentication below). If you add a new cross-feature call from `AttemptsModule` back into `UsersModule`, you'll reintroduce that cycle and need `forwardRef()` again.
 
 ### Entity relations and ESM (`Relation<T>`)
 
 Entity relation properties (e.g. `Question.quiz`, `Choice.question`) are typed as `Relation<Question>` etc., with `Relation` imported via `import type { Relation } from 'typeorm'`. This is required, not stylistic: under ESM with `emitDecoratorMetadata` + `isolatedModules`, a direct circular type reference (`Question` importing `Choice` and vice versa) crashes at runtime with a `ReferenceError` (TDZ), and `Relation` must be a type-only import specifically because it's used only in type position — mixing it into the regular value import from `typeorm` breaks the isolatedModules check. When adding a new relation property, follow this exact pattern.
 
-### Auth/security notes
+### Authentication
 
-- `User.password` has `@Column({ select: false })` (excluded from query results) **and** `@Exclude()` from `class-transformer` (excluded from serialized responses via the global `ClassSerializerInterceptor` in `main.ts`) — `select: false` alone does not stop a freshly-`save()`d entity from having the plaintext/hashed password in the object returned to the controller, so both are needed.
-- Passwords are hashed with `bcrypt` in `UsersService`, never in the controller or repository.
+Every endpoint requires a valid session **by default** — a global `APP_GUARD` (`JwtAuthGuard`, registered in `auth/auth.module.ts`) applies to every controller in the app, including ones outside `AuthModule`. To exempt a route, decorate it with `@Public()` (`auth/decorators/public.decorator.ts`); currently only `GET /` (`AppController`), `POST /users` (registration), and `POST /auth/login` are public. When adding a new controller/route, assume it's protected unless you explicitly opt out — don't add a manual guard, add `@Public()` where the *opposite* is true.
+
+The session is a JWT in an `httpOnly` cookie (`token`), not an `Authorization` header — set on `POST /auth/login`, cleared on `POST /auth/logout`. `JwtStrategy` (`auth/strategies/jwt.strategy.ts`) extracts it from `req.cookies.token` (needs `cookie-parser` middleware, wired in `main.ts`) and re-fetches the user from the DB on every request (not just decoding the token), so a deleted user's existing token stops working immediately. Inside a protected handler, get the current user via `@CurrentUser()` (`auth/decorators/current-user.decorator.ts`), not from any client-supplied ID in the body — e.g. `AttemptsController.start` takes the quiz ID from the URL but the user ID from `@CurrentUser()`.
+
+Because the frontend and backend are different origins in dev (`:5173` vs `:3000`), cookie auth requires `CORS_ORIGIN` credentials to be explicitly enabled: `app.enableCors({ credentials: true, ... })` in `main.ts`, and the frontend must send `credentials: 'include'` on every fetch.
+
+`User.password` has `@Column({ select: false })` (excluded from query results) **and** `@Exclude()` from `class-transformer` (excluded from serialized responses via the global `ClassSerializerInterceptor` in `main.ts`) — `select: false` alone does not stop a freshly-`save()`d entity from having the plaintext/hashed password in the object returned to the controller, so both are needed. Passwords are hashed with `bcrypt` in `UsersService`, never in the controller or repository.
 
 ### Swagger
 

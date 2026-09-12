@@ -1,12 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ClassSerializerInterceptor, INestApplication, ValidationPipe } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import cookieParser from 'cookie-parser';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module.js';
+import { registerAndLogin } from './setup/auth-helper.js';
 
 describe('Users (e2e)', () => {
   let app: INestApplication<App>;
+  let agent: Awaited<ReturnType<typeof registerAndLogin>>['agent'];
   const runId = Date.now();
   const username = `quizzer-${runId}`;
   const email = `user-${runId}@example.com`;
@@ -18,18 +21,22 @@ describe('Users (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.use(cookieParser());
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
     await app.init();
+
+    ({ agent } = await registerAndLogin(app));
   });
 
   afterAll(async () => {
     if (createdUserId) {
-      await request(app.getHttpServer()).delete(`/users/${createdUserId}`);
+      await agent.delete(`/users/${createdUserId}`);
     }
     await app.close();
   });
 
+  // POST /users is a public (unauthenticated) endpoint - use a plain request, not the logged-in agent.
   it('/users (POST) creates a user without leaking the password', async () => {
     const response = await request(app.getHttpServer())
       .post('/users')
@@ -56,7 +63,7 @@ describe('Users (e2e)', () => {
   });
 
   it('/users (GET) lists users', async () => {
-    const response = await request(app.getHttpServer()).get('/users').expect(200);
+    const response = await agent.get('/users').expect(200);
     expect(Array.isArray(response.body)).toBe(true);
   });
 
@@ -71,9 +78,9 @@ describe('Users (e2e)', () => {
       .expect(201);
     const id = created.body.id;
 
-    await request(app.getHttpServer()).get(`/users/${id}`).expect(200);
+    await agent.get(`/users/${id}`).expect(200);
 
-    await request(app.getHttpServer())
+    await agent
       .patch(`/users/${id}`)
       .send({ username: `renamed-${runId}` })
       .expect(200)
@@ -81,8 +88,8 @@ describe('Users (e2e)', () => {
         expect(res.body.username).toBe(`renamed-${runId}`);
       });
 
-    await request(app.getHttpServer()).delete(`/users/${id}`).expect(200);
-    await request(app.getHttpServer()).get(`/users/${id}`).expect(404);
+    await agent.delete(`/users/${id}`).expect(200);
+    await agent.get(`/users/${id}`).expect(404);
   });
 
   it.todo('/users/:id/attempts (GET) lists a user’s attempt history');

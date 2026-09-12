@@ -23,6 +23,19 @@ Once running:
 - API at `http://localhost:3000` (e.g. `POST /quizzes`, `GET /quizzes/:id/questions`, ...)
 - Swagger UI at `http://localhost:3000/docs` (raw spec at `/docs-json`)
 
+## Authentication
+
+Every endpoint requires a logged-in session, except `POST /users` (register), `POST /auth/login`, and `GET /` (health check). Login sets an `httpOnly` session cookie — there's no `Authorization`-header/bearer-token flow.
+
+```
+POST /users        { username, email, password }   -> creates an account
+POST /auth/login    { email, password }              -> sets the session cookie
+GET  /auth/me                                          -> current user
+POST /auth/logout                                     -> clears the session
+```
+
+A browser-based client must send `credentials: 'include'` on every request for the cookie to be sent/accepted cross-origin (see `CORS_ORIGIN` in `.env.example`).
+
 ## Testing
 
 ```bash

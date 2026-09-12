@@ -9,8 +9,8 @@ export class Attempt {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => User, (user) => user.attempts, { nullable: true, onDelete: 'SET NULL' })
-  user?: Relation<User>;
+  @ManyToOne(() => User, (user) => user.attempts, { onDelete: 'CASCADE' })
+  user: Relation<User>;
 
   @ManyToOne(() => Quiz, (quiz) => quiz.attempts, { onDelete: 'CASCADE' })
   quiz: Relation<Quiz>;

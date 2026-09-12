@@ -8,6 +8,7 @@ import { QuestionsModule } from './questions/questions.module.js';
 import { ChoicesModule } from './choices/choices.module.js';
 import { UsersModule } from './users/users.module.js';
 import { AttemptsModule } from './attempts/attempts.module.js';
+import { AuthModule } from './auth/auth.module.js';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { AttemptsModule } from './attempts/attempts.module.js';
     ChoicesModule,
     UsersModule,
     AttemptsModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
