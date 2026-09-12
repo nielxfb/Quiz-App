@@ -1,0 +1,16 @@
+FROM node:24-alpine
+
+WORKDIR /app
+
+# bcrypt is a native module; build tools let npm compile it if no
+# prebuilt binary matches this platform/arch.
+RUN apk add --no-cache python3 make g++
+
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+
+EXPOSE 3000
+
+CMD ["npm", "run", "start:dev"]
