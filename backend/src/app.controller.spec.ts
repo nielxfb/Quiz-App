@@ -19,4 +19,11 @@ describe('AppController', () => {
       expect(appController.getHello()).toBe('Hello World!');
     });
   });
+
+  describe('time', () => {
+    it('should return a valid ISO timestamp', () => {
+      const { serverTime } = appController.getServerTime();
+      expect(new Date(serverTime).toISOString()).toBe(serverTime);
+    });
+  });
 });

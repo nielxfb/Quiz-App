@@ -11,4 +11,10 @@ export class AppController {
   getHello(): string {
     return this.appService.getHello();
   }
+
+  @Public()
+  @Get('time')
+  getServerTime(): { serverTime: string } {
+    return this.appService.getServerTime();
+  }
 }
