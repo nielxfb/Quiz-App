@@ -18,7 +18,7 @@ Single test file: `npx vitest run path/to/file.spec.ts` (unit) or `npx vitest ru
 
 ### Database
 
-Postgres is required (`docker compose -f ../docker-compose.dev.yml up -d` from repo root). `.env` (copy from `.env.example`) configures the dev DB; `synchronize: true` is on outside production, so tables are created/altered automatically on boot — no migrations exist.
+Postgres is required. `../docker-compose.dev.yml` (repo root) runs `db`, `backend`, and `frontend` as containers together (`../start.sh` / `../stop.sh`, or `docker compose -f ../docker-compose.dev.yml up -d db` for just Postgres). **Don't run the backend both ways at once** — `npm run start:dev` natively while the `backend` container is also up will fail to bind port 3000 (hit this firsthand). The container runs as root and bind-mounts this directory, so anything it writes (`dist/`, `tsconfig.build.tsbuildinfo`) ends up root-owned on the host and blocks a later native build with `EACCES` — fix with `docker run --rm -v $(pwd):/app alpine chown -R $(id -u):$(id -g) /app/dist /app/tsconfig.build.tsbuildinfo` (also hit this firsthand). `.env` (copy from `.env.example`) configures the dev DB; `synchronize: true` is on outside production, so tables are created/altered automatically on boot — no migrations exist.
 
 e2e tests use a **separate** database, never the dev one. `.env.test` (copy from `.env.test.example`) must point `DB_NAME` at a name ending in `_test`; `test/setup/global-setup.ts` enforces this and drops+recreates the `public` schema before the suite runs, so tests always start from empty. `vitest.config.e2e.ts` runs spec files sequentially (`fileParallelism: false`) because they share this one database and would otherwise race on schema creation.
 
